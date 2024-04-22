@@ -10,6 +10,17 @@ import os
 import cv2
 
 torch.manual_seed(1)  # 使用随机化种子使神经网络的初始化每次都相同
+dev_x = []
+dev_y = []
+
+
+def plot_image(dev_x, dev_y):
+    plt.plot(dev_x, dev_y,label="accuracy")
+    plt.xlabel("Batch")
+    plt.ylabel("Accuracy")
+    plt.title("Accuracy Variates with Batch")
+    plt.show()
+
 
 ################################################################################
 # 超参数
@@ -62,8 +73,8 @@ class CNN(nn.Module):  # 我们建立的CNN继承nn.Module这个模块
         self.conv1 = nn.Sequential(
             # 第一个卷积con2d
             nn.Conv2d(  # 输入图像大小(1,28,28)
-                in_channels=1,  # 输入图片的高度，因为minist数据集是灰度图像只有一个通道
-                out_channels=16,  # n_filters 卷积核的高度
+                in_channels=1,  # 输入图片的通道数，因为minist数据集是灰度图像只有一个通道
+                out_channels=16,  # n_filters 卷积核的数量
                 kernel_size=5,  # filter size 卷积核的大小 也就是长x宽=5x5
                 stride=1,  # 步长
                 padding=2,  # 想要con2d输出的图片长宽不变，就进行补零操作 padding = (kernel_size-1)/2
@@ -114,23 +125,24 @@ optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)
 # 损失函数
 loss_func = nn.CrossEntropyLoss()  # 目标标签是one-hotted
 
-# 开始训练
-for epoch in range(EPOCH):
-    for step, (b_x, b_y) in enumerate(train_loader):  # 分配batch data
-        output = cnn(b_x)  # 先将数据放到cnn中计算output
-        loss = loss_func(output, b_y)  # 输出和真实标签的loss，二者位置不可颠倒
-        optimizer.zero_grad()  # 清除之前学到的梯度的参数
-        loss.backward()  # 反向传播，计算梯度
-        optimizer.step()  # 应用梯度
-
-        if step % 50 == 0:
-            test_output = cnn(test_x)
-            pred_y = torch.max(test_output, 1)[1].data.numpy()
-            accuracy = float((pred_y == test_y.data.numpy()).astype(int).sum()) / float(test_y.size(0))
-            print('Epoch: ', epoch, '| train loss: %.4f' % loss.data.numpy(), '| test accuracy: %.2f' % accuracy)
-
-torch.save(cnn.state_dict(), 'cnn2.pkl')#保存模型
-
+# # 开始训练
+# for epoch in range(EPOCH):
+#     for step, (b_x, b_y) in enumerate(train_loader):  # 分配batch data
+#         output = cnn(b_x)  # 先将数据放到cnn中计算output
+#         loss = loss_func(output, b_y)  # 输出和真实标签的loss，二者位置不可颠倒
+#         optimizer.zero_grad()  # 清除之前学到的梯度的参数
+#         loss.backward()  # 反向传播，计算梯度
+#         optimizer.step()  # 应用梯度
+#
+#         test_output = cnn(test_x)
+#         pred_y = torch.max(test_output, 1)[1].data.numpy()
+#         accuracy = float((pred_y == test_y.data.numpy()).astype(int).sum()) / float(test_y.size(0))
+#         dev_x.append(step), dev_y.append(accuracy)
+#         if step % 50 == 0:  # 每50个batch输出一次结果
+#             print('Epoch: ', epoch, '| train loss: %.4f' % loss.data.numpy(), '| test accuracy: %.2f' % accuracy)
+#
+# torch.save(cnn.state_dict(), 'cnn2.pkl')  # 保存模型
+# plot_image(dev_x, dev_y)
 # 加载模型，调用时需将前面训练及保存模型的代码注释掉，否则会再训练一遍
 cnn.load_state_dict(torch.load('cnn2.pkl'))
 cnn.eval()
@@ -139,7 +151,7 @@ inputs = test_x[:32]  # 测试32个数据
 test_output = cnn(inputs)
 pred_y = torch.max(test_output, 1)[1].data.numpy()
 print(pred_y, 'prediction number')  # 打印识别后的数字
-# print(test_y[:10].numpy(), 'real number')
+print(test_y[:32].numpy(), 'real number')
 
 img = torchvision.utils.make_grid(inputs)
 img = img.numpy().transpose(1, 2, 0)
