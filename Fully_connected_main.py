@@ -11,6 +11,17 @@ import cv2
 
 torch.manual_seed(1)  # 使用随机化种子使神经网络的初始化每次都不同
 
+
+dev_x = []
+dev_y = []
+def plot_image(dev_x, dev_y):
+    plt.plot(dev_x, dev_y,label="accuracy")
+    plt.xlabel("Batch")
+    plt.ylabel("Accuracy")
+    plt.title("Accuracy Variates with Batch")
+    plt.show()
+
+
 ################################################################################
 # 超参数
 EPOCH = 1  # 训练整批数据的次数
@@ -51,18 +62,18 @@ test_y = test_data.targets[:2000]
 
 
 # 用class类来建立FullyConnectedNet模型
-# CNN流程：卷积(Linear)-> 激励函数(ReLU)->
+# FCNN流程：卷积(Linear)-> 激励函数(ReLU)->
 #         卷积(Linear)-> 激励函数(ReLU)->
 #         卷积(Linear)-> 输出
-#        展平多维的卷积成的特征图->接入全连接层(Linear)->输出
+
 
 class FullyConnectedNet(nn.Module):
     def __init__(self):
         super(FullyConnectedNet, self).__init__()
         # 第一个全连接层接受输入 784 个特征 (对应于 1x28x28 图像)
         self.fc1 = nn.Linear(784, 128)  # 从784个输入到128个输出
-        self.fc2 = nn.Linear(128, 64)   # 第二个全连接层，从128个节点到64个节点
-        self.fc3 = nn.Linear(64, 10)    # 最后一个全连接层，输出10个类别（对应于10个数字）
+        self.fc2 = nn.Linear(128, 64)  # 第二个全连接层，从128个节点到64个节点
+        self.fc3 = nn.Linear(64, 10)  # 最后一个全连接层，输出10个类别（对应于10个数字）
 
     def forward(self, x):
         # 因为pytorch里特征的形式是[bs,channel,h,w]，所以x.size(0)就是batchsize
@@ -73,6 +84,7 @@ class FullyConnectedNet(nn.Module):
         x = nn.ReLU()(x)  # 激活函数
         x = self.fc3(x)  # 最后一层全连接
         return x
+
 
 # 选择网络
 cnn = FullyConnectedNet()
@@ -86,25 +98,28 @@ optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)
 # 损失函数
 loss_func = nn.CrossEntropyLoss()  # 目标标签是one-hotted
 
-# 开始训练
-for epoch in range(EPOCH):
-    for step, (b_x, b_y) in enumerate(train_loader):  # 分配batch data
-        output = cnn(b_x)  # 先将数据放到cnn中计算output
-        loss = loss_func(output, b_y)  # 输出和真实标签的loss，二者位置不可颠倒
-        optimizer.zero_grad()  # 清除之前学到的梯度的参数
-        loss.backward()  # 反向传播，计算梯度
-        optimizer.step()  # 应用梯度
-
-        if step % 50 == 0: #每一个batch输出一次结果
-            test_output = cnn(test_x)
-            pred_y = torch.max(test_output, 1)[1].data.numpy()
-            accuracy = float((pred_y == test_y.data.numpy()).astype(int).sum()) / float(test_y.size(0))
-            print('Epoch: ', epoch, '| train loss: %.4f' % loss.data.numpy(), '| test accuracy: %.2f' % accuracy)
-
-torch.save(cnn.state_dict(), 'cnn2.pkl')#保存模型
-
+# # 开始训练
+# for epoch in range(EPOCH):
+#     for step, (b_x, b_y) in enumerate(train_loader):  # 分配batch data
+#         output = cnn(b_x)  # 先将数据放到cnn中计算output
+#         loss = loss_func(output, b_y)  # 输出和真实标签的loss，二者位置不可颠倒
+#         optimizer.zero_grad()  # 清除之前学到的梯度的参数
+#         loss.backward()  # 反向传播，计算梯度
+#         optimizer.step()  # 应用梯度
+#
+#
+#         test_output = cnn(test_x)
+#         pred_y = torch.max(test_output, 1)[1].data.numpy()
+#         accuracy = float((pred_y == test_y.data.numpy()).astype(int).sum()) / float(test_y.size(0))
+#         dev_x.append(step), dev_y.append(accuracy)
+#         if step % 50 == 0:  # 每50个batch输出一次结果
+#             print('Epoch: ', epoch, '| train loss: %.4f' % loss.data.numpy(), '| test accuracy: %.2f' % accuracy)
+#
+# torch.save(cnn.state_dict(), 'fcnn2.pkl')  # 保存模型
+# plot_image(dev_x,dev_y)
+#
 # 加载模型，调用时需将前面训练及保存模型的代码注释掉，否则会再训练一遍
-cnn.load_state_dict(torch.load('cnn2.pkl'))
+cnn.load_state_dict(torch.load('fcnn2.pkl'))
 cnn.eval()
 
 # print 10 predictions from test data
